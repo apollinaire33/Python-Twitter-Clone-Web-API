@@ -4,13 +4,11 @@ ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update -y && apt-get upgrade -y
 
-ADD requirements.txt /code/
-WORKDIR /code
-
-RUN pip install -r requirements.txt
-
 WORKDIR /code
 COPY . /code/
+
+RUN pip install pipenv
+RUN pipenv install --system --deploy --ignore-pipfile
 
 RUN chmod 755 /code/docker-entrypoint.sh
 
