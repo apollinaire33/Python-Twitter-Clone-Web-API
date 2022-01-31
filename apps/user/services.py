@@ -2,6 +2,7 @@ import datetime
 
 import jwt
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import AuthenticationFailed
 
 from apps.user.models import User
@@ -13,10 +14,7 @@ class UserAuthentication:
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
 
-        user = User.objects.filter(email=email).first()
-
-        if user is None:
-            raise AuthenticationFailed('User with this Email does not exist')
+        user = get_object_or_404(User, email=email)
 
         if not user.check_password(password):
             raise AuthenticationFailed('Incorrect password for specified Email')

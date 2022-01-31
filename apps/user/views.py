@@ -8,24 +8,24 @@ from apps.user.serializers import UserSerializer, UserLoginSerializer
 from apps.user.services import UserAuthentication
 
 
-class UserViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
+class UserViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet
+):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated,)
 
-    @action(detail=False, methods=('post',), url_path='register', permission_classes=[AllowAny])
-    def register(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    default_serializer_class = UserSerializer
+    serializer_classes_by_action = {
+    }
 
-        serializer.save()
+    default_permission_classes = (IsAuthenticated,)
+    permission_classes_by_action = {
+        'create': (AllowAny,),
+    }
 
-        return Response(
-            f'User {serializer.validated_data["email"]} created successfully',
-            status=status.HTTP_201_CREATED
-        )
-
-    @action(detail=False, methods=('post',), url_path='login', permission_classes=[AllowAny])
+    @action(detail=False, methods=('post',), url_path='login', permission_classes=(AllowAny,))
     def login(self, request):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -36,3 +36,12 @@ class UserViewSet(viewsets.GenericViewSet, mixins.ListModelMixin):
             f'Access token: {token}',
             status=status.HTTP_200_OK
         )
+
+    def get_serializer_class(self):
+        return self.serializer_classes_by_action.get(self.action, self.default_serializer_class)
+
+    def get_permissions(self):
+        try:
+            return [permission() for permission in self.permission_classes_by_action[self.action]]
+        except KeyError:
+            return [permission() for permission in self.permission_classes]
