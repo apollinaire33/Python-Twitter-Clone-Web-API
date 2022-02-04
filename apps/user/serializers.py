@@ -25,13 +25,9 @@ class UserBlockSerializer(serializers.ModelSerializer):
         pages = instance.pages.all()
 
         if is_blocked:
-            for page in pages:
-                page.is_blocked = True
-                page.save()
+            pages.update(is_blocked=True)
         elif not is_blocked:
-            for page in instance.pages.all():
-                page.is_blocked = False
-                page.save()
+            pages.update(is_blocked=False)
 
         return super().update(instance, validated_data)
 

@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
@@ -7,15 +8,13 @@ from apps.user.serializers import UserSerializer
 
 class PageAppSerializer(serializers.ModelSerializer):
     @staticmethod
-    def get_field_value(validated_data, field_name):
+    def get_field_value(validated_data, field_name, is_list=False):
         try:
-            followers = validated_data[field_name][0]
-        except KeyError:
-            followers = None
+            field_value = validated_data.get(field_name)[0] if is_list else validated_data.get(field_name)
         except IndexError:
-            followers = []
+            field_value = []
 
-        return followers
+        return field_value
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -47,7 +46,7 @@ class PostLikesSerializer(PostSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get("request")
-        likes = self.get_field_value(validated_data, 'likes')
+        likes = self.get_field_value(validated_data, field_name='likes', is_list=True)
 
         if likes:
             if request.method == 'POST':
@@ -106,7 +105,7 @@ class PageFollowRequestSerializer(PageSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get("request")
-        follow_request = self.get_field_value(validated_data, 'follow_requests')
+        follow_request = self.get_field_value(validated_data, field_name='follow_requests', is_list=True)
 
         if follow_request:
             if request.method == 'POST':
@@ -136,9 +135,10 @@ class PageFollowersSerializer(PageSerializer):
         model = Page
         fields = ('followers',)
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         request = self.context.get("request")
-        followers = self.get_field_value(validated_data, 'followers')
+        followers = self.get_field_value(validated_data, field_name='followers', is_list=True)
 
         if followers:
             if request.method == 'POST':

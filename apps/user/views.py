@@ -27,7 +27,7 @@ class UserViewSet(
     permission_classes = (IsAuthenticated,)
     permission_classes_by_action = {
         'create': (AllowAny,),
-        'retrieve': (IsUser,),
+        'retrieve': (IsUser | IsAdminUser,),
         'update': (IsUser,),
         'destroy': (IsUser, IsAdminUser,),
         'block_user': (IsAdminUser,),
