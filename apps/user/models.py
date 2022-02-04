@@ -14,3 +14,13 @@ class User(AbstractUser):
 
     title = models.CharField(max_length=80)
     is_blocked = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.role == self.Roles.ADMIN:
+            self.is_staff = True
+            self.is_superuser = True
+        else:
+            self.is_staff = False
+            self.is_superuser = False
+
+        return super().save(**kwargs)
