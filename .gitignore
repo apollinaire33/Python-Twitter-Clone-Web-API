@@ -103,6 +103,7 @@ ipython_config.py
 __pypackages__/
 
 # Celery stuff
+celery.logs
 celerybeat-schedule
 celerybeat.pid
 

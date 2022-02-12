@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 
 class User(AbstractUser):
@@ -9,7 +10,7 @@ class User(AbstractUser):
         ADMIN = 'admin'
 
     email = models.EmailField(unique=True)
-    image_s3_path = models.CharField(max_length=200, null=True, blank=True)
+    avatar = models.CharField(max_length=200, default=settings.AWS_S3_BASE_USER_PROFILE_PHOTO)
     role = models.CharField(max_length=9, choices=Roles.choices, default=Roles.USER)
 
     title = models.CharField(max_length=80)

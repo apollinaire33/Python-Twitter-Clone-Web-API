@@ -7,9 +7,8 @@ RUN apt-get update -y && apt-get upgrade -y
 WORKDIR /code
 COPY . /code/
 
-RUN pip install pipenv
-RUN pipenv install --system --deploy --ignore-pipfile
+RUN pip install pipenv && pipenv install --system --deploy --ignore-pipfile
 
-RUN chmod 755 /code/docker-entrypoint.sh
+RUN chmod 755 /code/run_web.sh && chmod 755 /code/run_celery.sh
 
-CMD ["bash", "/code/docker-entrypoint.sh"]
+CMD ["bash", "/code/run_web.sh"]

@@ -101,6 +101,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = 'user.User'
 
+
 # DRF and JWT Configuration
 
 REST_FRAMEWORK = {
@@ -119,6 +120,39 @@ PY_JWT = {
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': os.environ.get('JWT_SIGNING_KEY'),
 }
+
+
+# AWS User configuration
+
+AWS_REGION = os.environ.get('AWS_REGION')
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
+# AWS SES configuration
+
+AWS_SES_EMAIL_SOURCE = os.environ.get('AWS_SES_EMAIL_SOURCE')
+
+# AWS S3 configuration
+
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+
+AWS_S3_PAGE_PROFILE_FOLDER = 'page-profile-photos/'
+AWS_S3_BASE_PAGE_PROFILE_PHOTO = AWS_S3_PAGE_PROFILE_FOLDER + 'base_photo.png'
+
+AWS_S3_USER_PROFILE_FOLDER = 'user-profile-photos/'
+AWS_S3_BASE_USER_PROFILE_PHOTO = AWS_S3_USER_PROFILE_FOLDER + 'base_photo.png'
+
+
+# RabbitMQ configuration
+
+RABBITMQ_USER = os.environ.get('RABBITMQ_DEFAULT_USER')
+RABBITMQ_PASS = os.environ.get('RABBITMQ_DEFAULT_PASS')
+
+# Celery configuration
+
+CELERY_BROKER_URL = f'amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@rabbit:5672'
+CELERY_RESULT_BACKEND = 'rpc://'
+
 
 # Internationalization
 

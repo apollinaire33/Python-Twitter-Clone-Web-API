@@ -1,9 +1,22 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from apps.user.models import User
+from apps.user.services import Avatar
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserAppSerializer(serializers.ModelSerializer):
+    @staticmethod
+    def get_field_value(validated_data, field_name, is_list=False):
+        try:
+            field_value = validated_data.get(field_name)[0] if is_list else validated_data.get(field_name)
+        except IndexError:
+            field_value = []
+
+        return field_value
+
+
+class UserSerializer(UserAppSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'password',)
@@ -15,7 +28,18 @@ class UserSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-class UserBlockSerializer(serializers.ModelSerializer):
+class UserDetailSerializer(UserAppSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'avatar',)
+
+    def to_representation(self, obj):
+        request = self.context.get("request")
+        user = super().to_representation(obj)
+        return Avatar.set_serializer_avatar(request, serializable_instance=user, obj=obj)
+
+
+class UserBlockSerializer(UserAppSerializer):
     class Meta:
         model = User
         fields = ('is_blocked',)
@@ -32,7 +56,7 @@ class UserBlockSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class UserLoginSerializer(serializers.ModelSerializer):
+class UserLoginSerializer(UserAppSerializer):
     class Meta:
         model = User
         fields = ('email', 'password',)
@@ -40,3 +64,19 @@ class UserLoginSerializer(serializers.ModelSerializer):
             'email': {'validators': []},
             'password': {'validators': []},
         }
+
+
+class UserURLSerializer(UserDetailSerializer):
+    class Meta:
+        model = User
+        fields = ('avatar',)
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        image = self.get_field_value(validated_data=validated_data, field_name='avatar')
+
+        return Avatar().set_instance_avatar(
+            request, image, instance,
+            avatar_folder=settings.AWS_S3_USER_PROFILE_FOLDER,
+            base_photo=settings.AWS_S3_BASE_USER_PROFILE_PHOTO,
+        )
