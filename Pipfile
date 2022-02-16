@@ -26,6 +26,9 @@ toml = "==0.10.2"
 Django = "==3.2.9"
 Markdown = "==3.3.4"
 pyjwt = "*"
+celery = "*"
+flower = "*"
+boto3 = "*"
 
 [dev-packages]
 

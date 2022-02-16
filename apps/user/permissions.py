@@ -10,4 +10,5 @@ class IsUser(permissions.BasePermission):
 
 class IsModeratorUser(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.role == User.Roles.MODERATOR
+        if request.user.is_authenticated:
+            return request.user.role == User.Roles.MODERATOR

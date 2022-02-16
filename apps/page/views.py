@@ -14,6 +14,7 @@ from apps.page.serializers import (
     PageLikedPostsSerializer,
     PostSerializer,
     PostLikesSerializer,
+    PageURLSerializer,
 )
 from apps.page.permissions import (
     IsPageOwner,
@@ -27,6 +28,7 @@ from apps.page.permissions import (
     IsSpecifiedFollowerCorrect,
     IsSpecifiedLikeCorrect,
 )
+from apps.page.filters import PageSearchFilter
 from apps.user.permissions import IsModeratorUser
 
 
@@ -66,6 +68,9 @@ class PageViewSet(
         'remove_follower': PageFollowersSerializer,
         'liked_posts': PageLikedPostsSerializer,
         'block_page': PageBlockSerializer,
+        'page_image': PageURLSerializer,
+        'update_image': PageURLSerializer,
+        'delete_image': PageURLSerializer,
     }
 
     permission_classes = (IsAuthenticated,)
@@ -80,8 +85,13 @@ class PageViewSet(
         ),
         'remove_follower': (IsSpecifiedFollowerCorrect | IsPageOwner,),
         'liked_posts': (IsPageOwner, IsPageBlocked,),
-        'block_page': (IsModeratorUser | IsAdminUser,)
+        'block_page': (IsModeratorUser | IsAdminUser,),
+        'page_image': (IsPageOwner,),
+        'update_image': (IsPageOwner,),
+        'delete_image': (IsPageOwner,),
     }
+
+    filter_backends = (PageSearchFilter,)
 
     lookup_url_kwarg = 'page_pk'
 
@@ -89,7 +99,7 @@ class PageViewSet(
     def follow_requests(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
 
-    @follow_requests.mapping.post
+    @follow_requests.mapping.put
     def add_follow_request(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
@@ -101,7 +111,7 @@ class PageViewSet(
     def followers(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
 
-    @followers.mapping.post
+    @followers.mapping.put
     def add_follower(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
@@ -115,6 +125,18 @@ class PageViewSet(
 
     @action(detail=True, methods=('PATCH',))
     def block_page(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @action(detail=True, methods=('GET',))
+    def page_image(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @page_image.mapping.put
+    def update_image(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @page_image.mapping.delete
+    def delete_image(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
     def get_serializer_class(self):
@@ -161,7 +183,7 @@ class PostViewSet(
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=('POST',), url_path='likes')
+    @action(detail=True, methods=('PUT',), url_path='likes')
     def like_post(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 

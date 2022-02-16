@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -17,7 +18,7 @@ class Page(models.Model):
     owner = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name='pages')
     followers = models.ManyToManyField('user.User', related_name='follows', blank=True)
 
-    image = models.URLField(null=True, blank=True)
+    avatar = models.CharField(max_length=200, default=settings.AWS_S3_BASE_PAGE_PROFILE_PHOTO)
 
     is_private = models.BooleanField(default=False)
     follow_requests = models.ManyToManyField('user.User', related_name='requests', blank=True)

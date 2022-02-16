@@ -1,9 +1,12 @@
+from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
+from apps.page.tasks import new_post_notification
 from apps.page.models import Tag, Post, Page
 from apps.user.serializers import UserSerializer
+from apps.user.services import Avatar
 
 
 class PageAppSerializer(serializers.ModelSerializer):
@@ -37,6 +40,16 @@ class PostSerializer(PageAppSerializer):
 
         return fields
 
+    def create(self, validated_data):
+        page = validated_data.get('page')
+        post_content = validated_data.get('content')
+        followers = page.followers.all()
+
+        for follower in followers:
+            new_post_notification.delay(recipient=follower.email, page_name=page.name, content=post_content)
+
+        return super().create(validated_data)
+
 
 class PostLikesSerializer(PostSerializer):
     class Meta:
@@ -49,7 +62,7 @@ class PostLikesSerializer(PostSerializer):
         likes = self.get_field_value(validated_data, field_name='likes', is_list=True)
 
         if likes:
-            if request.method == 'POST':
+            if request.method == 'PUT':
                 instance.likes.add(likes)
             elif request.method == 'DELETE':
                 instance.likes.remove(likes)
@@ -66,9 +79,10 @@ class PageSerializer(PageAppSerializer):
         model = Page
         fields = (
             'name',
+            'uuid',
             'tags',
             'owner',
-            'image',
+            'avatar',
             'is_private',
         )
 
@@ -82,7 +96,7 @@ class PageBlockSerializer(PageAppSerializer):
         )
 
 
-class PageDetailSerializer(serializers.ModelSerializer):
+class PageDetailSerializer(PageSerializer):
     owner = UserSerializer(many=False, read_only=True)
 
     class Meta:
@@ -93,9 +107,14 @@ class PageDetailSerializer(serializers.ModelSerializer):
             'description',
             'tags',
             'owner',
-            'image',
+            'avatar',
             'is_private',
         )
+
+    def to_representation(self, obj):
+        request = self.context.get("request")
+        page = super().to_representation(obj)
+        return Avatar.set_serializer_avatar(request, serializable_instance=page, obj=obj)
 
 
 class PageFollowRequestSerializer(PageSerializer):
@@ -108,7 +127,7 @@ class PageFollowRequestSerializer(PageSerializer):
         follow_request = self.get_field_value(validated_data, field_name='follow_requests', is_list=True)
 
         if follow_request:
-            if request.method == 'POST':
+            if request.method == 'PUT':
                 instance.follow_requests.add(follow_request)
             elif request.method == 'DELETE':
                 instance.follow_requests.remove(follow_request)
@@ -141,12 +160,12 @@ class PageFollowersSerializer(PageSerializer):
         followers = self.get_field_value(validated_data, field_name='followers', is_list=True)
 
         if followers:
-            if request.method == 'POST':
+            if request.method == 'PUT':
                 instance.follow_requests.remove(followers)
                 instance.followers.add(followers)
             elif request.method == 'DELETE':
                 instance.followers.remove(followers)
-        elif request.method == 'POST' and len(followers) == 0:
+        elif request.method == 'PUT' and len(followers) == 0:
             if instance.owner != request.user:
                 raise PermissionDenied
 
@@ -173,3 +192,19 @@ class PageLikedPostsSerializer(PageSerializer):
     class Meta:
         model = Page
         fields = ('liked_posts',)
+
+
+class PageURLSerializer(PageDetailSerializer):
+    class Meta:
+        model = Page
+        fields = ('avatar',)
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        image = self.get_field_value(validated_data=validated_data, field_name='avatar')
+
+        return Avatar().set_instance_avatar(
+            request, image, instance,
+            avatar_folder=settings.AWS_S3_PAGE_PROFILE_FOLDER,
+            base_photo=settings.AWS_S3_BASE_PAGE_PROFILE_PHOTO,
+        )
